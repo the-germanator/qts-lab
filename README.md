@@ -42,4 +42,19 @@ while (record = await cursor.next()) {
 	assert(!isNaN(record.max) && !isBigIntObject(record.time))
 }
 ```
-which passed, meaning that all records match my assumptions.
+which passed, meaning that all records match my initial assumptions.
+
+
+## Other assumptions
+A brief google search shows that the "SAT" and "RAT" accronyms like stand for "Supply Air Temperature" and "Return Air Temperature" in the context of a data center. Since the problem states that what we're looking for is: 
+| [...] rapid changes in the CRAC unit's supply temperature
+I deduced that we're looking exclusively at values with the .SAT tag suffix.
+
+
+## SOURCES
+I used the following resources while working on this:
+- npmjs.com: 			to find a parquet package
+- stackoverflow.com: 	general resources
+- mdn.com: 				general reference
+
+No AI tools were used at any point.
