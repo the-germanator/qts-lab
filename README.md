@@ -50,6 +50,15 @@ A brief google search shows that the "SAT" and "RAT" accronyms like stand for "S
 | [...] rapid changes in the CRAC unit's supply temperature
 I deduced that we're looking exclusively at values with the .SAT tag suffix.
 
+I also assume that "occurs more than 5 times within a hour" means any 60-minute period, rather than between actual hours i.e. 00:00:00 - 01:00:00 etc.
+
+I assume that values of null should be removed
+
+I assume that values are in no way sorted.
+
+I assume that timestamps are in nanoseconds i.e. one billionth of a second. To calculate time deltas, I'm performing simple math with the builtin BigInt methods and then dividing the final result by one billion to get the delta in seconds.
+
+I assume that alerts should only be triggered if the same unit registers >= 5 unusual values in an hour.
 
 ## SOURCES
 I used the following resources while working on this:
