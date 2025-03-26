@@ -2,7 +2,7 @@
 
 After completing my intiial sanity check, I wanted to start with a naive approach to the problem. For this first attempt, I'm assumed that the data is historical and that I could analyze it after-the-fact. This approach allows me to easily find "normal" values and deduce the "abnormal" values based on statistical properties.
 
-For this approach, I chose javascript, since I'm most comfortable with it. I began by pre-processing the data by:
+For this approach, I chose javascript (technically deno & typescript), since I'm most comfortable with it. I began by pre-processing the data by:
 - removing unneccessary information
 - filtering the unneccessary RAT values from the SAT values
 - grouping the records by sensor (Device Name)
