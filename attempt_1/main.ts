@@ -20,14 +20,14 @@ const airSupplyRecords: SensorLog = {};
 // loop through dataset
 let record: RawRecord | null = null;
 while (record = await cursor.next()) {
-	
+
 	// only store air supply data that's not null
-	if(record.TagName.endsWith('.SAT') && record.max && record.time) {
+	if (record.TagName.endsWith('.SAT') && record.max && record.time) {
 
 		// check if value belongs to an existing sensor. 
 		// Either create new entry or push sensor data to array
 		const newTempRecord = { time: record.time, value: record.max }
-		if(Object.keys(airSupplyRecords).includes(record.TagName)) {
+		if (Object.keys(airSupplyRecords).includes(record.TagName)) {
 			airSupplyRecords[record.TagName].values.push(newTempRecord);
 		} else {
 			airSupplyRecords[record.TagName] = { values: [newTempRecord] };
@@ -37,9 +37,9 @@ while (record = await cursor.next()) {
 
 
 // sort values by their timestamps and calculate mean & st. dev.
-for(const [sensor, sensorData] of Object.entries(airSupplyRecords)) {
+for (const [sensor, sensorData] of Object.entries(airSupplyRecords)) {
 
-	sensorData.values.sort((a,b) => {
+	sensorData.values.sort((a, b) => {
 		return a.time > b.time ? 1 : -1;
 	});
 
@@ -50,19 +50,17 @@ for(const [sensor, sensorData] of Object.entries(airSupplyRecords)) {
 	airSupplyRecords[sensor].mean = mean;
 	airSupplyRecords[sensor].stDev = stDev;
 
-	// since we need OUTLIERS_PER_HOUR_TRIGGER in a row,
-	// the last element that we could start on is length - OUTLIERS_PER_HOUR_TRIGGER
 	let ptr = 0;
-	let beginSequence = 0;
-	while(ptr < sensorData.values.length - OUTLIERS_PER_HOUR_TRIGGER) {
-		
-		let timeStamp = sensorData.values[ptr].time
-		let value = sensorData.values[ptr].value
+	let beginSequence = 0; // tracks beginning of error sequence
+	while (ptr < sensorData.values.length - OUTLIERS_PER_HOUR_TRIGGER) {
+
+		let timeStamp = sensorData.values[ptr].time;
+		let value = sensorData.values[ptr].value;
 
 		// if current value is not an error, reset everything
-		if(isValueInRange(value, mean, stDev, THRESHOLD_ST_DEV)) {
+		if (isValueInRange(value, mean, stDev, THRESHOLD_ST_DEV)) {
 			// check if we just ended an error streak
-			if(ptr - beginSequence >= 5) {
+			if (ptr - beginSequence >= 5) {
 				handleAlert(sensorData.values, sensor, beginSequence, ptr, mean, stDev);
 			}
 			ptr++;
@@ -70,27 +68,17 @@ for(const [sensor, sensorData] of Object.entries(airSupplyRecords)) {
 		} else {
 			// we're looking at an error.
 			// if this is the first instance, set the beginning sequence index
-			if(beginSequence >= ptr) {
+			if (beginSequence >= ptr) {
 				// beginnning
 				beginSequence = ptr;
 				ptr++;
 			} else {
 				// in the middle
-				if(timeStamp - sensorData.values[beginSequence].time < NANO_PER_HOUR) {
-					// we're still in hour range.
-					// check if we've hit 5
-					if(ptr - beginSequence >= 5) {
-						ptr++;
-					} else {
-						ptr++;
-					}
-				} else {
-					// we're out of range. Move beginning up one.
+				if (timeStamp - sensorData.values[beginSequence].time >= NANO_PER_HOUR) {
 					beginSequence++;
-					ptr++;
 				}
+				ptr++;
 			}
-			
 		}
 	}
 }
