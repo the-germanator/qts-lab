@@ -39,12 +39,13 @@ export const main = async () => {
 	logger.debug(`Finished removing compliant values`);
 
 	// begin actual analysis
+	for(const [sensor, sensorData] of Object.entries(processed_records)) {
+		// extract only the timestamp of current record
+		let _values: Date[] = sensorData.values.map(datapoint => datapoint.time);
+
+	}
 	
 }
-
-
-
-
 
 
 main();

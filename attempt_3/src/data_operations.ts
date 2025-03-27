@@ -45,7 +45,7 @@ export const loadParquetToMemory = async (filePath: string, raw_sanitized_record
 
 
 // filters records with invalid time, or value
-const isRecordValid = (record: RawRecord): boolean => {
+export const isRecordValid = (record: RawRecord): boolean => {
 	if(record === null) return false;
 
 	const isTagValid = record.TagName !== null && record.TagName.length > 4 && record.TagName.endsWith('.SAT');
@@ -64,8 +64,15 @@ export const sortAndDedupeRecords = (processed_records: ProcessedRecords) => {
 		// simple sort on timestamps. two bigints can be compared.
 		sensorData.values.sort((a, b) =>  a.time > b.time ? 1 : -1);
 
-		// Sets in js are guaranteed to preserve order otherwise this wouldn't be possible.
-		sensorData.values = Array.from(new Set(sensorData.values))
+		// filter out unique. Since elements are sorted, we just traverse array and check adjacent elements.
+		sensorData.values = sensorData.values.filter((current, index, array) => {
+			if(index === 0) return true;
+
+			const isValueSame = current.value === array[index-1].value;
+			const isDateSame = current.time.getTime() === array[index-1].time.getTime();
+
+			return !(isValueSame && isDateSame);
+		})
 	}
 }
 
@@ -84,7 +91,12 @@ export const calculateMetricsForSensor = (processed_records: ProcessedRecords) =
 
 // we only really care about values outside the range.
 export const filterCompliantValues = (processed_records: ProcessedRecords, STDEV_TRIGGER: number) => {
+	logger.debug(`Starting to purge compliant values`)
+	
 	for (const sensorData of Object.values(processed_records)) {
+		// const startingCount =  Object.values(sensorData.values).length;
 		sensorData.values = sensorData.values.filter((record) => !isValueWithinRange(record.value, sensorData.mean!, sensorData.stDev!, STDEV_TRIGGER) )
+		// const endingCount =  Object.values(sensorData.values).length;
+		// logger.debug(`${endingCount}/${startingCount} records remain for current sensor.`)
 	}
 }
