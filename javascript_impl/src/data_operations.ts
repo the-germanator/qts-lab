@@ -5,6 +5,11 @@ import { ProcessedRecords, RawRecord, SensorValue } from './types';
 
 const logger = log4js.getLogger();
 
+/**
+ * loads parquet file into memory.
+ * removes unneccessary data by providing headers to the getCursor function
+ * and further filters by performing a basic sanity check against record
+ */
 export const loadParquetToMemory = async (filePath: string, raw_sanitized_records: ProcessedRecords) => {
 	logger.debug('Loading parquet file and performing basic sanity checks on data');
 
@@ -12,13 +17,11 @@ export const loadParquetToMemory = async (filePath: string, raw_sanitized_record
 	let finalCount = 0;
 
 	try {
-
 		let reader = await parquetjs.ParquetReader.openFile(filePath);
 
 		// only read columns we care about
 		// @ts-ignore
 		let cursor = reader.getCursor(['time', 'TagName', 'max']);
-
 
 		// loop through dataset
 		let record = null;
@@ -37,11 +40,10 @@ export const loadParquetToMemory = async (filePath: string, raw_sanitized_record
 			}
 		}
 		await reader.close();
-		
+
 		logger.debug(`${finalCount}/${originalCount} records remain post sanity check`)
 	} catch {
 		logger.error('Failed to open or parse parquet file. Please try again.')
-		return null;
 	}
 }
 

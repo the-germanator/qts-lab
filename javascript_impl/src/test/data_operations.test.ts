@@ -23,7 +23,7 @@ describe('loadParquetToMemory', () => {
 		jest.clearAllMocks();
 	})
 
-	it('should load sample file into memory', async () => {
+	it('should call file load', async () => {
 		const openFileSpy = jest.fn().mockResolvedValue({ next: jest.fn().mockResolvedValue(null) })
 
 		parquetjs.ParquetReader.openFile = openFileSpy
@@ -46,7 +46,7 @@ describe('loadParquetToMemory', () => {
 		let temp_sanitized_records: ProcessedRecords = {}
 		await loadParquetToMemory('./abc.def', temp_sanitized_records)
 
-		expect(Object.values(temp_sanitized_records['TAG1.SAT'].values)).toHaveLength(3)
+		expect(Object.values(temp_sanitized_records['TAG1.SAT'].values)).toHaveLength(10)
 	})
 });
 

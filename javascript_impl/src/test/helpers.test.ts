@@ -1,10 +1,14 @@
+import log4js from 'log4js';
 import { 
 	nanoToDate,
 	prettyPrintDate,
 	isValueWithinRange,
 	findMean,
-	findStDev
+	findStDev,
+	raiseAlarm
 } from '../helpers';
+
+import * as helpers from '../helpers';
 
 describe('nanoToDate', () => {
 	it('should parse Y2K correctly', () => {
@@ -58,5 +62,35 @@ describe('findStDev', () => {
 		const expectedStDev = 3.696845502136472;
 
 		expect(findStDev(values, mean)).toEqual(expectedStDev);
+	});
+});
+
+describe('raiseAlarm', () => {
+    
+	it('should not log when range is length 0', () => {
+		const ranges: Date[][] = [];
+
+		const errorSpy = jest.fn();
+
+		log4js.getLogger = jest.fn().mockReturnValue({ error: errorSpy })
+
+		raiseAlarm('test123', ranges);
+
+		expect(errorSpy).not.toHaveBeenCalled()
+
+	});
+
+	it('should display info about 3 windows for a sensor', () => {
+		const ranges = [[new Date(1), new Date(2001)], [new Date(3001), new Date(4000)]];
+
+		const errorSpy = jest.fn();
+
+		log4js.getLogger = jest.fn().mockReturnValue({ error: errorSpy })
+
+		raiseAlarm('test123', ranges);
+
+		expect(errorSpy).toHaveBeenCalledTimes(1);
+		expect(errorSpy.mock.calls[0][0]).toContain('test123')
+
 	});
 });

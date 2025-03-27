@@ -1,12 +1,18 @@
 
 import log4js from 'log4js';
 
-import { loadParquetToMemory, sortAndDedupeRecords, calculateMetricsForSensor, filterCompliantValues, rangeSlotInIndex } from './data_operations';
-import { } from './helpers';
+import { 
+	loadParquetToMemory,
+	sortAndDedupeRecords,
+	calculateMetricsForSensor,
+	filterCompliantValues,
+	rangeSlotInIndex 
+} from './data_operations';
+import { raiseAlarm } from './helpers';
 import { ProcessedRecords } from './types';
 
 var logger = log4js.getLogger();
-logger.level = "debug";
+logger.level = "error";
 
 // configure parameters
 const CONSTANTS = {
@@ -14,10 +20,6 @@ const CONSTANTS = {
 	THRESHOLD_PER_HOUR: 5, // how many alerts in X timeframe should trigger the alarm
 	STDEV_TRIGGER: 3 // how many standard deviations from the mean indicates an anomaly of a single value
 };
-
-export const alert = (sensorName: string, ranges: Date[][]) => {
-	logger.error(ranges.length + " ranges of alarms detected");
-}
 
 // perform main analysis
 export const analyzeData = (values: Date[], sensorName: string) => {
@@ -42,8 +44,10 @@ export const analyzeData = (values: Date[], sensorName: string) => {
 			let rightSlotInIndex = rangeSlotInIndex(intervals, values[ptr1], values[ptr2], false);
 		
 			if(leftSlotInIndex !== -1) {
+				// update left side of existing interval
 				intervals[leftSlotInIndex][0] = values[ptr1]
 			} else if (rightSlotInIndex !== -1) {
+				// update right side of existing interval
 				intervals[rightSlotInIndex][1] = values[ptr2]
 			} else {
 				// no exact match was found. Must be a new record.
@@ -52,7 +56,8 @@ export const analyzeData = (values: Date[], sensorName: string) => {
 		}
 		ptr2++;
 	}
-	logger.debug(sensorName + ": " + JSON.stringify(intervals));
+
+	raiseAlarm(sensorName, intervals);
 }
 
 
@@ -82,12 +87,10 @@ export const main = async () => {
 	for(const [sensor, sensorData] of Object.entries(processed_records)) {
 		// extract only the timestamp of current record
 		let _values: Date[] = sensorData.values.map(datapoint => datapoint.time);
-		if(sensor === 'QTS_LAB_CRAC_MG1102_10.SAT') {
-			analyzeData(_values, sensor);
-		}
+		analyzeData(_values, sensor);
 	}
-	
-}
 
+	// done with analys
+}
 
 main();

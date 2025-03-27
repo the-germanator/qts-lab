@@ -1,3 +1,5 @@
+import log4js from 'log4js'
+
 // converts nano-second timestamps to Date object by means of milliseconds
 // NOTE: This has the potential to lose precision, but not in any significant way.
 export const nanoToDate = (nano: BigInt): Date => {
@@ -29,7 +31,28 @@ export const findStDev = (values: number[], mean: number): number => {
 	);
 }
 
-// simple date comparer. Returns true if first date is bigger
-// export const isDateBigger = (d1: Date, d2: Date): boolean => {
-// 	return d1.getTime() > d2.getTime();
-// }
+// raises alarm to console.
+export const raiseAlarm = (sensorName: string, alarmRanges: Date[][]) => {
+	const logger = log4js.getLogger();
+
+	if(alarmRanges.length === 0) return;
+
+	let ranges = '';
+	alarmRanges.forEach(range => {
+		let delta: number = (range[1].getTime()- range[0].getTime()) / 1000; // in seconds
+		let deltaHrs = Math.floor(delta / 3600);
+		let deltaMin = Math.floor((delta - deltaHrs * 3600) / 60);
+		let deltaSec = Math.floor((delta - deltaHrs * 3600 - deltaMin * 60) / 60);
+
+
+		let startPretty = prettyPrintDate(range[0]);
+		let endPretty = prettyPrintDate(range[1]);
+
+		ranges += `\n\t - ${startPretty} --> ${endPretty} (${deltaHrs.toString().padStart(2, '0')}:${deltaMin.toString().padStart(2, '0')}:${deltaSec.toString().padStart(2, '0')})`
+	});
+
+	/**
+	 * TODO: Add API call to Pagerduty, Slack/Teams/Discord, Twillio or AWS-specific alerting API call here
+	 */
+	logger.error(`${sensorName} was in alarm state ${alarmRanges.length} times during the following intervals: ${ranges}`)
+}
