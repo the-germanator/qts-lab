@@ -60,6 +60,50 @@ I assume that timestamps are in nanoseconds i.e. one billionth of a second. To c
 
 I assume that alerts should only be triggered if the same unit registers >= 5 unusual values in an hour.
 
+
+
+## Sanity checking
+After completing the javascript inplementation, I wanted to do a quick sanity check to ensure the system is working as intended. During earlier testing, I noticed one outlier unit: `QTS_LAB_CRAC_MG1102_10.SAT`. This unit has some pretty wild swings in temperature (compared to the mean), so it would serve as my reference point. I modified the logic in the main script to only focus on this unit and dump both the outlier values and final ranges to a file. Below is what I saw:
+```
+{
+	"values": [
+		{
+			"value": 77.900002,
+			"time": "2025-03-24T22:43:00.000Z"
+		},
+		{
+			"value": 74.300003,
+			"time": "2025-03-24T22:46:30.000Z"
+		},
+		[... several lines omitted ...]
+		{
+			"value": 77,
+			"time": "2025-03-25T11:38:00.000Z"
+		},
+		{
+			"value": 75.199997,
+			"time": "2025-03-25T11:41:30.000Z"
+		}
+	],
+	"mean": 73.11937327152427,
+	"stDev": 0.3873603929087312
+}
+```
+
+I observed that because the standard deviation is generally so low, even at 5+ standard deviations from the mean as the cutoff, we see a number of results. Note the timestamps of the earliest and latest record. We can compare this to the range output: 
+```
+[
+	["2025-03-24T22:43:00.000Z","2025-03-24T22:46:30.000Z"],
+	["2025-03-25T11:38:00.000Z","2025-03-25T11:41:30.000Z"]
+]
+```
+They match! This is a good sign that things are working as intended.
+
+
+
+
+
+
 ## SOURCES
 I used the following resources while working on this:
 - npmjs.com: 			to find a parquet package
