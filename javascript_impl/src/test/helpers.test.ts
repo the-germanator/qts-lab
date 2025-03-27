@@ -1,5 +1,5 @@
 import log4js from 'log4js';
-import { 
+import {
 	nanoToDate,
 	prettyPrintDate,
 	isValueWithinRange,
@@ -32,15 +32,15 @@ describe('isValueWithinRange', () => {
 		const value = 97;
 		const mean = 100;
 		const stDev = 1;
-		const threshold_stDev= 3;
+		const threshold_stDev = 3;
 		expect(isValueWithinRange(value, mean, stDev, threshold_stDev)).toBeTruthy();
 	});
-	
+
 	it('should correctly identify a value NOT in range', () => {
 		const value = 105;
 		const mean = 100;
 		const stDev = 1;
-		const threshold_stDev= 3;
+		const threshold_stDev = 3;
 		expect(isValueWithinRange(value, mean, stDev, threshold_stDev)).toBeFalsy();
 	});
 });
@@ -66,7 +66,7 @@ describe('findStDev', () => {
 });
 
 describe('raiseAlarm', () => {
-    
+
 	it('should not log when range is length 0', () => {
 		const ranges: Date[][] = [];
 

@@ -1,7 +1,7 @@
 import { RawRecord } from "../../types";
 
 export const records: RawRecord[] = [
-	{	
+	{
 		"time": 1743034175000000000n,
 		"TagName": "TAG1.SAT",
 		"max": 100

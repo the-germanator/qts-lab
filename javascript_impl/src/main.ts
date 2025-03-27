@@ -1,12 +1,12 @@
 
 import log4js from 'log4js';
 
-import { 
+import {
 	loadParquetToMemory,
 	sortAndDedupeRecords,
 	calculateMetricsForSensor,
 	filterCompliantValues,
-	rangeSlotInIndex 
+	rangeSlotInIndex
 } from './data_operations';
 import { raiseAlarm } from './helpers';
 import { ProcessedRecords } from './types';
@@ -24,45 +24,45 @@ const CONSTANTS = {
 // perform main analysis
 export const analyzeData = (values: Date[], sensorName: string) => {
 	// short-circuit if there aren't enough values to trigger an alarm
-	if(values.length < CONSTANTS.THRESHOLD_PER_HOUR || values[values.length - 1].getTime() - values[0].getTime() < CONSTANTS.TIMEFRAME) return;
+	if (values.length < CONSTANTS.THRESHOLD_PER_HOUR || values[values.length - 1].getTime() - values[0].getTime() < CONSTANTS.TIMEFRAME) return;
 
 	// we know there are enough values to set up our pointers
 	let ptr1 = 0;
 	let ptr2 = CONSTANTS.THRESHOLD_PER_HOUR - 1;
 
 	// array of arrays representing ranges where alarms should be fired. This is our main return value.
-	let intervals: Date[][] = []
-	
-	while(ptr2 < values.length) {
+	let intervals: Date[][] = [];
+
+	while (ptr2 < values.length) {
 		ptr1 = ptr2 - 1;
 
-		while(ptr1 > 0 && values[ptr2].getTime() - values[ptr1 - 1].getTime() <= CONSTANTS.TIMEFRAME) {
+		while (ptr1 > 0 && values[ptr2].getTime() - values[ptr1 - 1].getTime() <= CONSTANTS.TIMEFRAME) {
 			ptr1--;
 		}
-		if(ptr2 - ptr1 >= CONSTANTS.THRESHOLD_PER_HOUR - 1) {	
+		if (ptr2 - ptr1 >= CONSTANTS.THRESHOLD_PER_HOUR - 1) {
 			let leftSlotInIndex = rangeSlotInIndex(intervals, values[ptr1], values[ptr2], true);
 			let rightSlotInIndex = rangeSlotInIndex(intervals, values[ptr1], values[ptr2], false);
-		
-			if(leftSlotInIndex !== -1) {
+
+			if (leftSlotInIndex !== -1) {
 				// update left side of existing interval
-				intervals[leftSlotInIndex][0] = values[ptr1]
+				intervals[leftSlotInIndex][0] = values[ptr1];
 			} else if (rightSlotInIndex !== -1) {
 				// update right side of existing interval
-				intervals[rightSlotInIndex][1] = values[ptr2]
+				intervals[rightSlotInIndex][1] = values[ptr2];
 			} else {
 				// no exact match was found. Must be a new record.
-				intervals.push([values[ptr1], values[ptr2]])
+				intervals.push([values[ptr1], values[ptr2]]);
 			}
 		}
 		ptr2++;
 	}
 
 	raiseAlarm(sensorName, intervals);
-}
+};
 
 
 export const main = async () => {
-	logger.debug('Starting script')
+	logger.debug('Starting script');
 
 	// data structure we re-use.
 	const processed_records: ProcessedRecords = {};
@@ -84,13 +84,11 @@ export const main = async () => {
 	logger.debug(`Finished removing compliant values`);
 
 	// begin actual analysis
-	for(const [sensor, sensorData] of Object.entries(processed_records)) {
+	for (const [sensor, sensorData] of Object.entries(processed_records)) {
 		// extract only the timestamp of current record
 		let _values: Date[] = sensorData.values.map(datapoint => datapoint.time);
 		analyzeData(_values, sensor);
 	}
-
-	// done with analys
-}
+};
 
 main();

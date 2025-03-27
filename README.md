@@ -82,7 +82,7 @@ The project is organized into three main files in the `src/` directory.
 
 <br />
 
-- The `test/` directory contains all my unit tests. ***Test coverage is 100%***.
+- The `test/` directory contains all my unit tests.
 - The `test/testdata/` directory contains sample data for different stages of testing. 
 
 <br />
