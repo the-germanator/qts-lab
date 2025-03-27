@@ -10,10 +10,56 @@ logger.level = "debug";
 
 // configure parameters
 const CONSTANTS = {
-	TIMEFRAME: 3600, // over how long of a period should we look for anomalies (in seconds. 3600 = 1 hour)
+	TIMEFRAME: 3600000, // over how long of a period should we look for anomalies (in milliseconds. 3600000 = 1 hour)
 	THRESHOLD_PER_HOUR: 5, // how many alerts in X timeframe should trigger the alarm
-	STDEV_TRIGGER: 3 // how many standard deviations from the mean indicates an anomaly of a single value
+	STDEV_TRIGGER: 10 // how many standard deviations from the mean indicates an anomaly of a single value
 };
+
+export const alert = (sensorName: string, ranges: Date[][]) => {
+	logger.error(ranges.length + " ranges of alarms detected");
+}
+
+// perform main analysis
+export const analyzeData = (values: Date[], sensorName: string) => {
+	// short-circuit if there aren't enough values to trigger an alarm
+	if(values.length < CONSTANTS.THRESHOLD_PER_HOUR || values[values.length - 1].getTime() - values[0].getTime() < CONSTANTS.TIMEFRAME) return;
+
+	// we know there are enough values to set up our pointers
+	let ptr1 = 0;
+	let ptr2 = CONSTANTS.THRESHOLD_PER_HOUR - 1;
+
+	// array of arrays representing ranges where alarms should be fired. This is our main return value.
+	let intervals: Date[][] = []
+	
+	while(ptr2 < values.length) {
+		ptr1 = ptr2 - 1;
+
+		while(ptr1 > 0 && values[ptr2].getTime() - values[ptr1 - 1].getTime() <= CONSTANTS.TIMEFRAME) {
+			ptr1--;
+		}
+		if(ptr2 - ptr1 >= CONSTANTS.THRESHOLD_PER_HOUR - 1) {
+			const existingIntervalIndex = intervals.findIndex(interval => interval[0].getTime() === values[ptr1].getTime() || interval[1].getTime() === values[ptr2].getTime());
+			let leftSlotInIndex = intervals.findIndex(interval => values[ptr1].getTime() < interval[0].getTime() && values[ptr2].getTime() > interval[0].getTime() && values[ptr2].getTime() < interval[1].getTime());
+			let rightSlotInIndex = intervals.findIndex(interval => values[ptr1].getTime() > interval[0].getTime() && values[ptr1].getTime() < interval[1].getTime() && values[ptr2].getTime() > interval[1].getTime());
+		
+
+			if(existingIntervalIndex !== -1) {
+				let oldMin = intervals[existingIntervalIndex][0].getTime();
+				let oldMax = intervals[existingIntervalIndex][1].getTime();
+				intervals[existingIntervalIndex] = [new Date(Math.min(oldMin, values[ptr1].getTime())), new Date(Math.max(oldMax, values[ptr2].getTime()))]
+			} else if(leftSlotInIndex !== -1) {
+				intervals[leftSlotInIndex][0] = values[ptr1]
+			} else if (rightSlotInIndex !== -1) {
+				intervals[rightSlotInIndex][1] = values[ptr2]
+			} else {
+				// no exact match was found
+				intervals.push([values[ptr1], values[ptr2]])
+			}
+		}
+		ptr2++;
+	}
+	logger.debug(sensorName + ": " + JSON.stringify(intervals));
+}
 
 
 export const main = async () => {
@@ -43,6 +89,7 @@ export const main = async () => {
 		// extract only the timestamp of current record
 		let _values: Date[] = sensorData.values.map(datapoint => datapoint.time);
 
+		analyzeData(_values, sensor);
 	}
 	
 }
