@@ -19,6 +19,7 @@ export const loadParquetToMemory = async (filePath: string, raw_sanitized_record
 		// @ts-ignore
 		let cursor = reader.getCursor(['time', 'TagName', 'max']);
 
+
 		// loop through dataset
 		let record = null;
 		while (record = await cursor.next()) {
@@ -36,13 +37,13 @@ export const loadParquetToMemory = async (filePath: string, raw_sanitized_record
 			}
 		}
 		await reader.close();
+		
 		logger.debug(`${finalCount}/${originalCount} records remain post sanity check`)
 	} catch {
 		logger.error('Failed to open or parse parquet file. Please try again.')
 		return null;
 	}
 }
-
 
 // filters records with invalid time, or value
 export const isRecordValid = (record: RawRecord): boolean => {
@@ -51,7 +52,6 @@ export const isRecordValid = (record: RawRecord): boolean => {
 	const isTagValid = record.TagName !== null && record.TagName.length > 4 && record.TagName.endsWith('.SAT');
 	const isTimeValid = record.time !== null && typeof record.time === 'bigint' && record.time > 0;
 	const isDataValid = record.max !== null && typeof record.max === 'number' && record.max > 0;
-
 	return isTagValid && isTimeValid && isDataValid;
 }
 
@@ -98,5 +98,33 @@ export const filterCompliantValues = (processed_records: ProcessedRecords, STDEV
 		sensorData.values = sensorData.values.filter((record) => !isValueWithinRange(record.value, sensorData.mean!, sensorData.stDev!, STDEV_TRIGGER) )
 		// const endingCount =  Object.values(sensorData.values).length;
 		// logger.debug(`${endingCount}/${startingCount} records remain for current sensor.`)
+	}
+}
+
+/**
+ * Finds "slotting" for interval. Intended to prevent dupliate alerts for a given timeframe.
+ * Consider the following intervals: existing interval: [1,10] and new interval: [2,11].
+ * We want to create one consistent interval spanning [1,11]. This would be a *right* side slot-in
+ * since the new range extends out to the right but not the left. The same concept can be applied to a
+ * left-extended slot-in.
+ * 
+ * Note: since our data is already sorted before this step, we can assume that there will never be a range that
+ * encompasses a previous range on both ends.
+ */
+
+export const rangeSlotInIndex = (intervals: Date[][], newStart: Date, newEnd: Date, left: boolean): number => {
+	let leftTime = newStart.getTime();
+	let rightTime = newEnd.getTime();
+
+	if(left) {
+		return intervals.findIndex(
+			interval => leftTime <= interval[0].getTime()
+			&& rightTime >= interval[0].getTime()
+			&& rightTime <= interval[1].getTime());
+	} else {	
+		return intervals.findIndex(
+			interval => leftTime >= interval[0].getTime()
+			&& leftTime <= interval[1].getTime()
+			&& rightTime >= interval[1].getTime());
 	}
 }

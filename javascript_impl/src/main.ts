@@ -1,7 +1,7 @@
 
 import log4js from 'log4js';
 
-import { loadParquetToMemory, sortAndDedupeRecords, calculateMetricsForSensor, filterCompliantValues } from './data_operations';
+import { loadParquetToMemory, sortAndDedupeRecords, calculateMetricsForSensor, filterCompliantValues, rangeSlotInIndex } from './data_operations';
 import { } from './helpers';
 import { ProcessedRecords } from './types';
 
@@ -37,22 +37,16 @@ export const analyzeData = (values: Date[], sensorName: string) => {
 		while(ptr1 > 0 && values[ptr2].getTime() - values[ptr1 - 1].getTime() <= CONSTANTS.TIMEFRAME) {
 			ptr1--;
 		}
-		if(ptr2 - ptr1 >= CONSTANTS.THRESHOLD_PER_HOUR - 1) {
-			const existingIntervalIndex = intervals.findIndex(interval => interval[0].getTime() === values[ptr1].getTime() || interval[1].getTime() === values[ptr2].getTime());
-			let leftSlotInIndex = intervals.findIndex(interval => values[ptr1].getTime() < interval[0].getTime() && values[ptr2].getTime() > interval[0].getTime() && values[ptr2].getTime() < interval[1].getTime());
-			let rightSlotInIndex = intervals.findIndex(interval => values[ptr1].getTime() > interval[0].getTime() && values[ptr1].getTime() < interval[1].getTime() && values[ptr2].getTime() > interval[1].getTime());
+		if(ptr2 - ptr1 >= CONSTANTS.THRESHOLD_PER_HOUR - 1) {	
+			let leftSlotInIndex = rangeSlotInIndex(intervals, values[ptr1], values[ptr2], true);
+			let rightSlotInIndex = rangeSlotInIndex(intervals, values[ptr1], values[ptr2], false);
 		
-
-			if(existingIntervalIndex !== -1) {
-				let oldMin = intervals[existingIntervalIndex][0].getTime();
-				let oldMax = intervals[existingIntervalIndex][1].getTime();
-				intervals[existingIntervalIndex] = [new Date(Math.min(oldMin, values[ptr1].getTime())), new Date(Math.max(oldMax, values[ptr2].getTime()))]
-			} else if(leftSlotInIndex !== -1) {
+			if(leftSlotInIndex !== -1) {
 				intervals[leftSlotInIndex][0] = values[ptr1]
 			} else if (rightSlotInIndex !== -1) {
 				intervals[rightSlotInIndex][1] = values[ptr2]
 			} else {
-				// no exact match was found
+				// no exact match was found. Must be a new record.
 				intervals.push([values[ptr1], values[ptr2]])
 			}
 		}
@@ -89,7 +83,6 @@ export const main = async () => {
 		// extract only the timestamp of current record
 		let _values: Date[] = sensorData.values.map(datapoint => datapoint.time);
 		if(sensor === 'QTS_LAB_CRAC_MG1102_10.SAT') {
-			console.log(JSON.stringify(sensorData))
 			analyzeData(_values, sensor);
 		}
 	}

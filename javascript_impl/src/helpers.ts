@@ -28,3 +28,8 @@ export const findStDev = (values: number[], mean: number): number => {
 		.reduce((a, b) => a + b) / values.length
 	);
 }
+
+// simple date comparer. Returns true if first date is bigger
+// export const isDateBigger = (d1: Date, d2: Date): boolean => {
+// 	return d1.getTime() > d2.getTime();
+// }
